@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Merge Data12</title>
+    <!-- Импортируем библиотеки xlsx и FileSaver для работы с Excel файлами и сохранения файлов соответственно -->
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+
+<body>
+    <!-- Создаем два поля ввода для загрузки файлов и кнопку для начала процесса слияния -->
+    <input type="file" id="file1" accept=".xlsx">
+    <input type="file" id="file2" accept=".xlsx">
+    <button id="mergeButton">Merge Data</button>
+    <!-- Создаем таблицу, в которую будут добавлены данные -->
+    <table id="dataTable">
+        <thead id="dataHead">
+            <!-- Заголовки таблицы будут динамически сгенерированы здесь -->
+        </thead>
+        <tbody id="dataBody">
+            <!-- Строки с данными о городах будут динамически сгенерированы здесь -->
+        </tbody>
+    </table>
+
+    <script>
+        // Определяем порядок городов
+        const cityOrder = [
+            'Южно-Уральская РДЖВ',
+            'Челябинск',
+            'Златоуст',
+            'Миасс',
+            'Шадринск',
+            'Оренбург',
+            'Бузулук',
+            'Троицк',
+            'Магнитогорск',
+            'Карталы',
+            'Орск',
+            'Курган',
+            'Бердяуш',
+            'Усть-Катав',
+            'Вязовая',
+            'Кропачево',
+            'Шумиха',
+            'Сибай',
+            'Никель',
+            'Новотроицк',
+            '',
+            'Свердловская РДЖВ',
+            'Екатеринбург',
+            'Тюмень',
+            'Пермь-2',
+            'Каменск-Уральский',
+            'Н.Тагил',
+            'Тобольск',
+            'Пыть-Ях',
+            'Нижневартовск',
+            'Сургут',
+            'Первоуральск',
+            'Серов',
+            'Березняки',
+            'Ноябрьск-1',
+            'Ноябрьск-2',
+            'Когалым',
+            'Камышлов',
+            'Коротчаево',
+            '',
+            'Горьковская РДЖВ',
+            'Нижний Новгород',
+            'Владимир',
+            'Дзержинск',
+            'Шахунья',
+            'Ковров',
+            'Муром',
+            'Арзамас-2',
+            'Навашино',
+            'Киров',
+            'Ижевск',
+            'Глазов',
+            'Котельнич',
+            'Сарапул',
+            'Янаул',
+            'Казань',
+            'Восстание',
+            'Зеленый Дол',
+            'Канаш',
+            'Чебоксары',
+            'Йошкар-Ола',
+            'Шумерля',
+            'Красноуфимск',
+            'Агрыз',
+            'Арзамас-1',
+            'Сергач',
+            '',
+            'Куйбышевская РДЖВ',
+            'Пенза-1',
+            'Кузнецк',
+            'Рузаевка',
+            'Саранск',
+            'Самара',
+            'Кинель',
+            'Абдулино',
+            'Сызрань-1',
+            'Тольятти',
+            'Уфа',
+            'Ульяновск',
+            'Набережные Челны',
+            'Инза',
+            'Потьма',
+            'Зубова Поляна',
+            'Белинская',
+            'Жигулевское море',
+            'Сызрань -Город',
+            'Чапаевск',
+            'Новокуйбышевская',
+            'Димитровград',
+            'Нурлат',
+            'Бугульма',
+            'Нижнекамск',
+            'Аша',
+            'Аксаково',
+            'Туймазы',
+            'Моршанск',
+            '',
+            ''
+        ];
+
+        // Функция для слияния данных из двух файлов
+        function mergeData(data1, data2) {
+            // Создаем объект для хранения слиянных данных
+            const mergedData = {};
+            // Извлекаем даты из первого файла (они находятся в первой строке)
+            const dates = data1[0].slice(1);
+
+            // Проходим по каждой строке в первом файле
+            data1.forEach(row => {
+                const city = row[0];
+                // Если для данного города еще нет данных, создаем пустой объект
+                if (!mergedData[city]) {
+                    mergedData[city] = {};
+                }
+                // Добавляем данные для каждой даты
+                row.slice(1).forEach((value, index) => {
+                    mergedData[city][dates[index]] = [value, undefined];
+                });
+            });
+
+            // Аналогично обрабатываем второй файл
+            data2.forEach(row => {
+                const city = row[0];
+                if (!mergedData[city]) {
+                    mergedData[city] = {};
+                }
+                row.slice(1).forEach((value, index) => {
+                    if (!mergedData[city][dates[index]]) {
+                        mergedData[city][dates[index]] = [undefined, value];
+                    } else {
+                        mergedData[city][dates[index]][1] = value;
+                    }
+                });
+            });
+
+            // Возвращаем объект с датами и слиянными данными
+            return { dates, data: mergedData };
+        }
+
+        // Функция для создания таблицы на основе слиянных данных
+        function createTable(mergedData) {
+            const { dates, data } = mergedData;
+            // Получаем ссылки на элементы заголовка и тела таблицы
+            const tableHead = document.getElementById('dataHead');
+            const tableBody = document.getElementById('dataBody');
+
+            // Создаем строку заголовка таблицы
+            const headerRow = document.createElement('tr');
+            const cityHeaderCell = document.createElement('th');
+            cityHeaderCell.innerText = "Cities";
+            headerRow.appendChild(cityHeaderCell);
+
+            // Добавляем ячейки с датами в заголовок таблицы
+            dates.forEach(date => {
+                const dateHeaderCell1 = document.createElement('th');
+                dateHeaderCell1.innerText = date;
+                const dateHeaderCell2 = document.createElement('th');
+                dateHeaderCell2.innerText = date + " Second File";
+                headerRow.appendChild(dateHeaderCell1);
+                headerRow.appendChild(dateHeaderCell2);
+            });
+
+            // Добавляем строку заголовка в таблицу
+            tableHead.appendChild(headerRow);
+
+            // Создаем строки с данными о городах
+            const cities = Object.keys(data);
+            // Сортируем города согласно заданному порядку, оставшиеся города идут после
+            const sortedCities = [...cityOrder, ...cities.filter(city => !cityOrder.includes(city))];
+
+            // Для каждого города создаем строку в таблице
+            sortedCities.forEach(city => {
+                const cityRow = document.createElement('tr');
+                const cityCell = document.createElement('td');
+                cityCell.innerText = city;
+                cityRow.appendChild(cityCell);
+
+                // Добавляем данные для каждой даты
+                dates.forEach(date => {
+                    const valueCell1 = document.createElement('td');
+                    const valueCell2 = document.createElement('td');
+
+                    // Если для данного города и даты есть данные, добавляем их в ячейки
+                    if (data[city] && data[city][date]) {
+                        valueCell1.innerText = data[city][date][0] !== undefined ? data[city][date][0] : '';
+                        valueCell2.innerText = data[city][date][1] !== undefined ? data[city][date][1] : '';
+                    }
+
+                    // Добавляем ячейки в строку города
+                    cityRow.appendChild(valueCell1);
+                    cityRow.appendChild(valueCell2);
+                });
+
+                // Добавляем строку города в таблицу
+                tableBody.appendChild(cityRow);
+            });
+        }
+
+        // Функция для сохранения данных таблицы в файл Excel
+        function downloadExcel() {
+            // Создаем книгу Excel из таблицы
+            const wb = XLSX.utils.table_to_book(document.getElementById('dataTable'), { sheet: "Sheet JS" });
+            // Преобразуем книгу в бинарный формат
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+
+            // Функция для преобразования строки в массив байтов
+            function s2ab(s) {
+                const buf = new ArrayBuffer(s.length);
+                const view = new Uint8Array(buf);
+                for (let i = 0; i < s.length; i++) {
+                    view[i] = s.charCodeAt(i) & 0xFF;
+                }
+                return buf;
+            }
+
+            // Сохраняем файл на компьютере пользователя
+            saveAs(new Blob([s2ab(wbout)], { type: "application/octet-stream" }), 'merged_data.xlsx');
+        }
+
+        // Добавляем обработчик события нажатия на кнопку
+        document.getElementById('mergeButton').addEventListener('click', function () {
+            // Получаем ссылки на загруженные файлы
+            const file1 = document.getElementById('file1').files[0];
+            const file2 = document.getElementById('file2').files[0];
+
+            // Создаем объект FileReader для чтения первого файла
+            const reader1 = new FileReader();
+            reader1.onload = function (e) {
+                // Преобразуем содержимое файла в массив данных
+                const data1 = XLSX.read(e.target.result, { type: 'binary' }).SheetNames.map((name) => XLSX.utils.sheet_to_json(XLSX.read(e.target.result, { type: 'binary' }).Sheets[name], { header: 1 }));
+                // Создаем объект FileReader для чтения второго файла
+                const reader2 = new FileReader();
+                reader2.onload = function (e) {
+                    // Преобразуем содержимое файла в массив данных
+                    const data2 = XLSX.read(e.target.result, { type: 'binary' }).SheetNames.map((name) => XLSX.utils.sheet_to_json(XLSX.read(e.target.result, { type: 'binary' }).Sheets[name], { header: 1 }));
+                    // Сливаем данные из двух файлов
+                    const mergedData = mergeData(data1[0], data2[0]);
+                    // Создаем таблицу на основе слиянных данных
+                    createTable(mergedData);
+                    // Сохраняем таблицу в файл Excel
+                    downloadExcel();
+                };
+                // Начинаем чтение второго файла
+                reader2.readAsBinaryString(file2);
+            };
+            // Начинаем чтение первого файла
+            reader1.readAsBinaryString(file1);
+        });
+    </script>
+</body>
+
+</html>
